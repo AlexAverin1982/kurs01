@@ -1,9 +1,16 @@
-from src.utils import get_period, greet_user, get_dataframe_from_xlsx, load_ops_from_xlsx
+from time import strptime, strftime
+import datetime as dt
+from datetime import datetime as datetime
+from src.utils import get_period, greet_user, get_dataframe_from_xlsx, filter_expenses_by_period, \
+    get_cards_totals, get_top_transactions, load_currencies_and_stocks_from_json
 from json import dumps
+
+
 import os.path
 
 
 def show_main_page() -> str:
+    """ JSON-данные для главной web-страницы """
     result = {'greeting': greet_user()}
     par_dir = os.path.abspath(os.path.join(__file__, os.pardir))
     par_dir = os.path.abspath(os.path.join(par_dir, os.pardir))
@@ -11,42 +18,40 @@ def show_main_page() -> str:
 
     dataframe = get_dataframe_from_xlsx(filename)
 
-    op_data = load_ops_from_xlsx(filename)
-    stats = {}
-    for item in op_data:
-        payment_sum = float(item.get('Сумма платежа', 0))
-        if payment_sum >= 0:
-            continue
+    # op_data = load_ops_from_xlsx(filename)
 
-        card_number = item.get('Номер карты', '')
-        if not card_number:
-            continue
-        totals = stats.get(card_number)
+    report_date_start, report_date_end = get_period()
+    # date_format = '%d.%m.%Y'
+    date_format = 'YYYY-MM-DD HH:MM:SS'
+    report_date_start = report_date_start.strftime(date_format)
+    report_date_end = report_date_end.strftime(date_format)
 
-        if totals:
-            balance = totals.get('balance')
-            if balance:
-                totals['balance'] = balance + payment_sum
-        else:
-            totals = {'balance': payment_sum}
+    # report_date_start = '01.12.2021'
+    # report_date_end = '19.12.2021'
 
-        cashback = float(item.get('Кэшбэк', 0))
+    # фильтруем траты по периоду
+    df_period_filtered = filter_expenses_by_period(dataframe=dataframe,
+                                                   period_column='Дата платежа',
+                                                   period_start=report_date_start,
+                                                   period_end=report_date_end,
+                                                   date_format=date_format,
+                                                   expenses_column='Сумма платежа')
 
-        total_cashback = totals.get('cashback', 0)
-        totals['cashback'] = total_cashback + cashback
-        stats[card_number] = totals
+    # получаем сводные данные по картам
+    result['cards'] = get_cards_totals(dataframe=df_period_filtered,
+                                       card_no_column='Номер карты',
+                                       payment_column='Сумма платежа',
+                                       cashback_column='Кэшбэк')
 
-    # группируем по номерам банковских карт
-    cards = dataframe.groupby(by='Номер карты', as_index=True)
+    result['top_transactions'] = get_top_transactions(dataframe=df_period_filtered, transactions_count=5,
+                                                      payment_column='Сумма платежа', period_column='Дата платежа',
+                                                      date_format='%d.%m.%Y', category_column='Категория',
+                                                      description_column='Описание')
 
-    # card_numbers =
+    filename = os.path.join(par_dir, "user_settings.json")
 
-    cards_data = []
-    for _, number in list(cards['Номер карты']):
-        card_totals = {"last_digits": number[1:]}
-        cards_data.append(card_totals)
+    currencies_and_stocks = load_currencies_and_stocks_from_json(filename)
 
-    result['cards'] = cards_data
+    result['currency_rates'] = get_currencies_rates(currencies_and_stocks)
 
-    report_period = get_period()
     return dumps(result)
