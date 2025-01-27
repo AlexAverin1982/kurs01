@@ -6,6 +6,38 @@ from time import strptime, strftime
 from pandas import read_excel, DataFrame, to_datetime
 from math import isnan
 
+from src.external_api import get_currency_rate
+
+CURRENCIES_AVAILABLE = {'USD': 'Американский доллар',
+                        'EUR': 'Евро',
+                        'CAD': 'Канадский доллар',
+                        'AUD': 'Австралийский доллар',
+                        'CNY': 'Юань',
+                        'DOP': 'Доминиканское песо',
+                        'HKD': 'Гонконгский доллар',
+                        'INR': 'Индийская рупия',
+                        'IRR': 'Иранский риал',
+                        'ILS': 'Новый израильский шекель',
+                        'JPY': 'Иена',
+                        }
+
+user_currencies = {}
+
+user_stocks = {}
+
+
+def show_main_page_menu() -> int:
+    while True:
+        print('-' * 20 + ' Главная страница ' + '-' * 20)
+        print('Выберите дальнейшее действие: ')
+        print('1. Отобразить статистику по банковским операциям')
+        print('2. Информация о валютах и акциях')
+        print('99. Выход')
+        user_input = input('\nВаш выбор: ')
+        if user_input.isdigit():
+            break
+    return int(user_input)
+
 
 def greet_user(time: datetime = datetime.now()):
     """ Строка приветствия пользователя, различающаяся в зависимости от времени суток """
@@ -140,9 +172,34 @@ def get_currencies_rates(data: dict) -> list[dict]:
     """ Получаем список словарей с ценами валют, полученными по API """
     result = []
     for currency_code in data.get('user_currencies', []):
-        currency = {"currency": get_currency_rate(currency_code)}
+        currency = {"currency": get_currency_rate(currency_code, 'RUB')}
     return result
 
+
+def set_users_currencies() -> dict:
+    global user_currencies
+    print('Введите через запятую номера интересующих валют')
+    print('Или *, чтобы выбрать все валюты')
+    print('Любая другая строка - отмена выбора\n')
+
+    i = 1
+    for code, description in CURRENCIES_AVAILABLE.items():
+        print(f"{i}. {code} --- {description}")
+        i += 1
+
+    user_input = input('Ваш выбор: ')
+    if user_input == '*':
+        user_currencies = {code: get_currency_rate(code, 'RUB') for code in CURRENCIES_AVAILABLE.keys()}
+    elif user_input.find(',') > 0:
+        indices = user_input.split(',')
+        indices = [int(i) for i in indices]
+        user_currencies = {code: get_currency_rate(code, 'RUB') for i, code in enumerate(CURRENCIES_AVAILABLE.keys()) if
+                           i+1 in indices}
+    else:
+        print('Выбран основной набор валют: USD, EUR, CNY')
+        user_currencies = {code: get_currency_rate(code, 'RUB') for code in ['USD', 'EUR', 'CNY']}
+
+    return user_currencies
 # def get_stats_from_list(data_list: list, report_date_start: str, report_date_end: str) -> dict:
 #     stats = {}
 #
