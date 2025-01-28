@@ -1,76 +1,93 @@
 import datetime as dt
 import os
 import json
+import time
 from datetime import datetime as datetime
-from time import strptime, strftime
+from datetime import timedelta as tdelta
+from time import strptime, strftime, struct_time
 from pandas import read_excel, DataFrame, to_datetime
+from time import mktime
 from math import isnan
 
-from src.external_api import get_currency_rate
 
-CURRENCIES_AVAILABLE = {'USD': 'Американский доллар',
-                        'EUR': 'Евро',
-                        'CAD': 'Канадский доллар',
-                        'AUD': 'Австралийский доллар',
-                        'CNY': 'Юань',
-                        'DOP': 'Доминиканское песо',
-                        'HKD': 'Гонконгский доллар',
-                        'INR': 'Индийская рупия',
-                        'IRR': 'Иранский риал',
-                        'ILS': 'Новый израильский шекель',
-                        'JPY': 'Иена',
-                        }
-
-user_currencies = {}
-
-user_stocks = {}
-
-
-def show_main_page_menu() -> int:
-    while True:
-        print('-' * 20 + ' Главная страница ' + '-' * 20)
-        print('Выберите дальнейшее действие: ')
-        print('1. Отобразить статистику по банковским операциям')
-        print('2. Информация о валютах и акциях')
-        print('99. Выход')
-        user_input = input('\nВаш выбор: ')
-        if user_input.isdigit():
-            break
-    return int(user_input)
-
-
-def greet_user(time: datetime = datetime.now()):
+def greet_user(current_time: datetime = datetime.now()):
     """ Строка приветствия пользователя, различающаяся в зависимости от времени суток """
-    if time.hour * 60 + time.minute < 340:
+    if current_time.hour * 60 + current_time.minute < 340:
         result = "Доброй ночи"
-    elif time.hour * 60 + time.minute < 12 * 60:
+    elif current_time.hour * 60 + current_time.minute < 12 * 60:
         result = "Доброе утро"
-    elif time.hour * 60 + time.minute < 17 * 60:
+    elif current_time.hour * 60 + current_time.minute < 17 * 60:
         result = "Добрый день"
-    elif time.hour * 60 + time.minute < 22 * 60:
+    elif current_time.hour * 60 + current_time.minute < 22 * 60:
         result = "Добрый вечер"
     else:
         result = "Доброй ночи"
     return result
 
 
-def get_period() -> tuple[datetime, datetime]:
-    """ Запрашиваем у пользователя конечную дату отчетного периода
+def is_leap_year(year: int) -> bool:
+    """ Проверка года на високосность """
+    return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
+
+
+def get_period(date_format: str = 'YYYY-MM-DD HH:MM:SS',
+               prompt: str = "Введите дату конца отчетного периода: ") -> tuple[struct_time, struct_time]:
+    """ Запрашиваем у пользователя дату из отчетного периода
     и возвращаем начало и конец периода"""
-    date_format = 'YYYY-MM-DD HH:MM:SS'
+
+    format_string = date_format.replace('YYYY', '%Y').replace('MM', '%m', 1).replace('DD', '%d')
+    format_string = format_string.replace('HH', '%H').replace('MM', '%M').replace('SS', '%S')
     correct_input = False
     period_start = period_end = datetime.now()
     while not correct_input:
         try:
             print(f'Корректный формат ввода даты: {date_format}\n')
-            period_end = input("Введите дату конца отчетного периода:")
-            period_end = strptime(period_end, '%Y-%m-%d %H:%M:%S')
+            period_end = input(prompt)
+            # period_end = strptime(period_end, '%Y-%m-%d %H:%M:%S')
+            period_end = strptime(period_end, format_string)
             correct_input = True
-            period_start = datetime(period_end.tm_year, period_end.tm_mon, 1)
+            period_start = struct_time(period_end.tm_year, period_end.tm_mon, 1) 
+            # datetime(period_end.tm_year, period_end.tm_mon, 1)
         except:
             print('Неверный формат ввода даты.\n')
 
     return period_start, period_end
+
+
+def get_report_span() -> str:
+    """ Выбор кода периода """
+    print('\nВведите длительность отчетного периода:')
+    print('W — неделя, на которую приходится дата;')
+    print('M — месяц, на который приходится дата;')
+    print('Y — год, на который приходится дата;')
+    print('ALL — все данные до указанной даты.')
+    print('Любая другая строка - период по умолчанию = месяц указанной даты')
+    return input().upper()
+
+
+def get_span_dates(report_date: struct_time, report_span: str) -> tuple[datetime, datetime]:
+    """ Возвращает первую и последнюю даты периодов: недели, месяца, года """
+    date_start = date_end = datetime.fromtimestamp(mktime(report_date))
+    if report_span == 'W':  # неделя
+        while date_start.weekday():
+            date_start = date_start - tdelta(days=1)
+        while date_end.weekday() < 6:
+            date_end = date_end + tdelta(days=1)
+        date_end = date_end + tdelta(days=1) - tdelta(seconds=1)
+    elif report_span == 'ALL':  # с начала прошлого века и до конца текущего дня
+        date_start = datetime(1900, 1, 1)
+        date_end = date_end + tdelta(days=1) - tdelta(seconds=1)
+    elif report_span == 'Y':  # текущий год
+        date_start = datetime(date_start.year, 1, 1)
+        date_end = date_start + tdelta(days=1 + int(is_leap_year(date_start.year))) - tdelta(seconds=1)
+    else:  # текущий месяц
+        date_start = datetime(date_start.year, date_start.month, 1)
+        date_end = datetime(date_start.year, date_start.month, 28)
+
+        while date_start.month == date_end.month:
+            date_end = date_end + tdelta(days=1)
+        date_end = date_end - tdelta(seconds=1)
+    return date_start, date_end
 
 
 def get_dataframe_from_xlsx(filepath: str) -> DataFrame:
@@ -95,8 +112,8 @@ def get_dataframe_from_xlsx(filepath: str) -> DataFrame:
 #     return result
 
 
-def filter_expenses_by_period(dataframe: DataFrame, period_column: str, period_start: str, period_end: str,
-                              date_format: str, expenses_column: str) -> DataFrame:
+def filter_operations_by_period(dataframe: DataFrame, period_column: str, period_start: str, period_end: str,
+                                date_format: str, expenses_column: str, filter_expenses: bool = True) -> DataFrame:
     """ Фильтруем dataframe: берем только отчетный период и только траты (платеж меньше нуля) """
 
     # convert date column into date format
@@ -108,12 +125,16 @@ def filter_expenses_by_period(dataframe: DataFrame, period_column: str, period_s
     df_period_filtered = dataframe[
         (dataframe[period_column] >= report_date_start) & (dataframe[period_column] <= report_date_end)]
 
-    df_period_filtered = df_period_filtered[df_period_filtered[expenses_column] < 0]
+    if filter_expenses:
+        df_period_filtered = df_period_filtered[df_period_filtered[expenses_column] < 0]
+    else:
+        df_period_filtered = df_period_filtered[df_period_filtered[expenses_column] > 0]
 
     return df_period_filtered.sort_values(by=period_column)
 
 
-def get_cards_totals(dataframe: DataFrame, card_no_column: str, payment_column: str, cashback_column: str) -> DataFrame:
+def get_cards_totals(dataframe: DataFrame, card_no_column: str, 
+                     payment_column: str, cashback_column: str) -> list[dict]:
     """ Сводные данные по картам: сумма трат и кэшбэка """
     # группируем по номерам банковских карт
     df_grouped_by_cards = dataframe.groupby(by=card_no_column)
@@ -124,7 +145,7 @@ def get_cards_totals(dataframe: DataFrame, card_no_column: str, payment_column: 
     cards_data = []
     for card_no, row in totals_by_cards.iterrows():
         card_totals = {"last_digits": card_no[1:],
-                       "total_spent": round(float(-row[payment_column]), 2),
+                       "total_spent": round(float(abs(row[payment_column])), 2),
                        "cashback": round(float(row[cashback_column]), 2)}
         cards_data.append(card_totals)
 
@@ -141,7 +162,7 @@ def get_top_transactions(dataframe: DataFrame, transactions_count: int, payment_
     for row_index in transactions_top.index:
         row = dataframe.loc[row_index]
         transaction = {"date": row[period_column].strftime(date_format),
-                       "amount": round(float(-row[payment_column]), 2),
+                       "amount": round(float(abs(row[payment_column])), 2),
                        # "amount": "%.02f" % float(-row[payment_column]),
                        "category": row[category_column],
                        "description": row[description_column]}
@@ -150,56 +171,40 @@ def get_top_transactions(dataframe: DataFrame, transactions_count: int, payment_
     return top_transactions
 
 
-def load_currencies_and_stocks_from_json(filename: str) -> list[dict]:
-    """ Функция принимает на вход путь до JSON-файла
-    и возвращает список словарей с данными о курсах валют и стоимости акций"""
-    result = []
-    if os.path.exists(filename) and os.path.isfile(filename):
-        try:
-            with open(filename, encoding="utf-8") as f:
-                result = json.load(f)
-            # utils_logger.info(f"файл {filename} с данными операций загружен успешно")
-        except json.JSONDecodeError as ex:
-            result = []
-            # utils_logger.error(ex)
+def get_operations_totals(dataframe: DataFrame, payment_column: str) -> float:
+    """ Сводные данные по картам: сумма трат и кэшбэка """
+    totals = dataframe.agg({payment_column: 'sum'})  # returns dataframe
+    return float(abs(totals[0]))
+
+
+def get_top_operations(dataframe: DataFrame, payment_column: str, category_column: str,
+                       categories_count: int = 0) -> tuple[int, list[dict]]:
+    """ Топ расходов по категориям """
+    # группируем по категориям, суммируя расходы
+
+    """ 
+    df_grouped_by_cards = dataframe.groupby(by=card_no_column)
+    agg_rule = {payment_column: 'sum', cashback_column: 'sum'}
+    totals_by_cards = df_grouped_by_cards.agg(agg_rule)  # returns dataframe
+    
+    """
+
+    agg_expenses_grouped_by_category = dataframe.groupby(by=category_column).agg({payment_column: 'sum'})
+    # сортируем итоговые траты по убыванию
+    if categories_count:
+        expenses_top = agg_expenses_grouped_by_category.nsmallest(categories_count, columns=payment_column)
     else:
-        # utils_logger.error(f"файл {filename} не найден")
-        result = []
-    return result
+        expenses_top = agg_expenses_grouped_by_category
 
+    top_expenses = []
+    total_expenses = 0
+    for category, expense in expenses_top.iterrows():
+        expense = {"category": category, "amount": int(round(abs(expense[0]), 0))}
+        total_expenses += expense["amount"]
+        top_expenses.append(expense)
 
-def get_currencies_rates(data: dict) -> list[dict]:
-    """ Получаем список словарей с ценами валют, полученными по API """
-    result = []
-    for currency_code in data.get('user_currencies', []):
-        currency = {"currency": get_currency_rate(currency_code, 'RUB')}
-    return result
+    return total_expenses, top_expenses
 
-
-def set_users_currencies() -> dict:
-    global user_currencies
-    print('Введите через запятую номера интересующих валют')
-    print('Или *, чтобы выбрать все валюты')
-    print('Любая другая строка - отмена выбора\n')
-
-    i = 1
-    for code, description in CURRENCIES_AVAILABLE.items():
-        print(f"{i}. {code} --- {description}")
-        i += 1
-
-    user_input = input('Ваш выбор: ')
-    if user_input == '*':
-        user_currencies = {code: get_currency_rate(code, 'RUB') for code in CURRENCIES_AVAILABLE.keys()}
-    elif user_input.find(',') > 0:
-        indices = user_input.split(',')
-        indices = [int(i) for i in indices]
-        user_currencies = {code: get_currency_rate(code, 'RUB') for i, code in enumerate(CURRENCIES_AVAILABLE.keys()) if
-                           i+1 in indices}
-    else:
-        print('Выбран основной набор валют: USD, EUR, CNY')
-        user_currencies = {code: get_currency_rate(code, 'RUB') for code in ['USD', 'EUR', 'CNY']}
-
-    return user_currencies
 # def get_stats_from_list(data_list: list, report_date_start: str, report_date_end: str) -> dict:
 #     stats = {}
 #
