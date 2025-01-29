@@ -1,0 +1,15 @@
+spending_by_workday() call start at Wed Jan 29 15:21:11 2025
+spending_by_workday() ok
+spending_by_workday() finished at Wed Jan 29 15:21:11 2025
+Run time: 0.024998903274536133
+Result is Empty DataFrame
+Columns: [Сумма платежа]
+Index: []
+spending_by_workday() call start at Wed Jan 29 15:21:32 2025
+spending_by_workday() ok
+spending_by_workday() finished at Wed Jan 29 15:21:32 2025
+Run time: 0.01800251007080078
+Result is           Сумма платежа
+Дни                    
+Будни       1259.502196
+Выходные     472.909818

@@ -25,76 +25,6 @@ def greet_user(current_time: datetime = datetime.now()):
     return result
 
 
-def is_leap_year(year: int) -> bool:
-    """ Проверка года на високосность """
-    return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
-
-
-def get_period(date_format: str = 'YYYY-MM-DD HH:MM:SS',
-               prompt: str = "Введите дату конца отчетного периода: ") -> tuple[struct_time, struct_time]:
-    """ Запрашиваем у пользователя дату из отчетного периода
-    и возвращаем начало и конец периода"""
-
-    format_string = date_format.replace('YYYY', '%Y').replace('MM', '%m', 1).replace('DD', '%d')
-    format_string = format_string.replace('HH', '%H').replace('MM', '%M').replace('SS', '%S')
-    correct_input = False
-    period_start = period_end = datetime.now()
-    while not correct_input:
-        try:
-            print(f'Корректный формат ввода даты: {date_format}\n')
-            period_end = input(prompt)
-            # period_end = strptime(period_end, '%Y-%m-%d %H:%M:%S')
-            period_end = strptime(period_end, format_string)
-            correct_input = True
-            period_start = struct_time(period_end.tm_year, period_end.tm_mon, 1) 
-            # datetime(period_end.tm_year, period_end.tm_mon, 1)
-        except:
-            print('Неверный формат ввода даты.\n')
-
-    return period_start, period_end
-
-
-def get_report_span() -> str:
-    """ Выбор кода периода """
-    print('\nВведите длительность отчетного периода:')
-    print('W — неделя, на которую приходится дата;')
-    print('M — месяц, на который приходится дата;')
-    print('Y — год, на который приходится дата;')
-    print('ALL — все данные до указанной даты.')
-    print('Любая другая строка - период по умолчанию = месяц указанной даты')
-    return input().upper()
-
-
-def get_span_dates(report_date: struct_time, report_span: str) -> tuple[datetime, datetime]:
-    """ Возвращает первую и последнюю даты периодов: недели, месяца, года """
-    date_start = date_end = datetime.fromtimestamp(mktime(report_date))
-    if report_span == 'W':  # неделя
-        while date_start.weekday():
-            date_start = date_start - tdelta(days=1)
-        while date_end.weekday() < 6:
-            date_end = date_end + tdelta(days=1)
-        date_end = date_end + tdelta(days=1) - tdelta(seconds=1)
-    elif report_span == 'ALL':  # с начала прошлого века и до конца текущего дня
-        date_start = datetime(1900, 1, 1)
-        date_end = date_end + tdelta(days=1) - tdelta(seconds=1)
-    elif report_span == 'Y':  # текущий год
-        date_start = datetime(date_start.year, 1, 1)
-        date_end = date_start + tdelta(days=1 + int(is_leap_year(date_start.year))) - tdelta(seconds=1)
-    else:  # текущий месяц
-        date_start = datetime(date_start.year, date_start.month, 1)
-        date_end = datetime(date_start.year, date_start.month, 28)
-
-        while date_start.month == date_end.month:
-            date_end = date_end + tdelta(days=1)
-        date_end = date_end - tdelta(seconds=1)
-    return date_start, date_end
-
-
-def get_dataframe_from_xlsx(filepath: str) -> DataFrame:
-    """ Загружает данные по транзакциям из файлов excel """
-    return read_excel(filepath)
-
-
 # def load_ops_from_xlsx(filepath: str) -> list[dict]:
 #     """загружает данные по транзакциям из файлов excel"""
 #     result = []
@@ -111,14 +41,22 @@ def get_dataframe_from_xlsx(filepath: str) -> DataFrame:
 #
 #     return result
 
+def get_dataframe_from_xlsx(filepath: str) -> DataFrame:
+    """ Загружает данные по транзакциям из файлов excel """
+    return read_excel(filepath)
 
-def filter_operations_by_period(dataframe: DataFrame, period_column: str, period_start: str, period_end: str,
-                                date_format: str, expenses_column: str, filter_expenses: bool = True) -> DataFrame:
-    """ Фильтруем dataframe: берем только отчетный период и только траты (платеж меньше нуля) """
+
+def filter_operations_by_period(dataframe: DataFrame, period_column: str, period_start: datetime, period_end: datetime,
+                                expenses_column: str, filter_expenses: bool = True) -> DataFrame:
+    """ Фильтруем dataframe: берем только отчетный период и только траты (платеж меньше нуля)
+    или только приход"""
 
     # convert date column into date format
-    report_date_start = strftime('%Y-%m-%d', strptime(period_start, date_format))
-    report_date_end = strftime('%Y-%m-%d', strptime(period_end, date_format))
+    # report_date_start = datetime.strftime('%Y-%m-%d', strptime(period_start, date_format))
+    # report_date_end = datetime.strftime('%Y-%m-%d', strptime(period_end, date_format))
+
+    report_date_start = period_start
+    report_date_end = period_end
 
     dataframe[period_column] = to_datetime(dataframe[period_column], dayfirst=True)
 
@@ -133,7 +71,7 @@ def filter_operations_by_period(dataframe: DataFrame, period_column: str, period
     return df_period_filtered.sort_values(by=period_column)
 
 
-def get_cards_totals(dataframe: DataFrame, card_no_column: str, 
+def get_cards_totals(dataframe: DataFrame, card_no_column: str,
                      payment_column: str, cashback_column: str) -> list[dict]:
     """ Сводные данные по картам: сумма трат и кэшбэка """
     # группируем по номерам банковских карт
@@ -174,7 +112,7 @@ def get_top_transactions(dataframe: DataFrame, transactions_count: int, payment_
 def get_operations_totals(dataframe: DataFrame, payment_column: str) -> float:
     """ Сводные данные по картам: сумма трат и кэшбэка """
     totals = dataframe.agg({payment_column: 'sum'})  # returns dataframe
-    return float(abs(totals[0]))
+    return float(abs(totals.iloc[0]))
 
 
 def get_top_operations(dataframe: DataFrame, payment_column: str, category_column: str,
@@ -199,11 +137,12 @@ def get_top_operations(dataframe: DataFrame, payment_column: str, category_colum
     top_expenses = []
     total_expenses = 0
     for category, expense in expenses_top.iterrows():
-        expense = {"category": category, "amount": int(round(abs(expense[0]), 0))}
+        expense = {"category": category, "amount": int(round(abs(expense.iloc[0]), 0))}
         total_expenses += expense["amount"]
         top_expenses.append(expense)
 
     return total_expenses, top_expenses
+
 
 # def get_stats_from_list(data_list: list, report_date_start: str, report_date_end: str) -> dict:
 #     stats = {}
@@ -260,3 +199,26 @@ def get_top_operations(dataframe: DataFrame, payment_column: str, category_colum
 #         stats[card_number] = totals
 #
 #     return stats
+
+def convert_dataframe_to_listdict(df: DataFrame) -> list[dict]:
+    """ Преобразует датафрейм в список словарей (не знаю, зачем) """
+    result = []
+    fields = list(df.head(0).columns.values)
+    for i in range(df.shape[0]):
+        row = list(df.iloc[i])
+        result.append(dict(zip(fields, row)))
+    return result
+
+
+def convert_values_in_listdict(listdict: list[dict], key_name: str,
+                               convert_to_type: type, format_str: str = '') -> None:
+    """ Преобразует значение укзаанного поля всех словарей списка к указанному типу """
+
+    for d in listdict:
+        src_value = d.get(key_name)
+        if not src_value:
+            continue
+        if convert_to_type is datetime:
+            d[key_name] = datetime.fromtimestamp(mktime(strptime(str(src_value), format_str)))
+        else:
+            d[key_name] = convert_to_type(src_value)

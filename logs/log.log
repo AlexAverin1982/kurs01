@@ -1,0 +1,16 @@
+spending_by_workday() call start at Wed Jan 29 15:17:10 2025
+spending_by_workday() ok
+spending_by_workday() finished at Wed Jan 29 15:17:10 2025
+Run time: 0.12399649620056152
+Result is           Сумма платежа
+Дни                    
+Будни       1367.973481
+Выходные     309.244925
+spending_by_workday() call start at Wed Jan 29 15:19:13 2025
+spending_by_workday() ok
+spending_by_workday() finished at Wed Jan 29 15:19:14 2025
+Run time: 0.1060175895690918
+Result is           Сумма платежа
+Дни                    
+Будни         785.79461
+Выходные     1083.60760
