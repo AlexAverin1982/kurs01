@@ -1,13 +1,10 @@
-from datetime import datetime as datetime
-
+from src.currencies_and_stocks_utils import cache_currencies, cache_stocks, select_users_currencies, show_users_rates
 from src.menus import show_main_page_menu
-from src.currencies_and_stocks_utils import select_users_currencies, show_users_rates, cache_stocks, cache_currencies, \
-    convert_stocks_prices
-from src.views import show_main_page, show_events_page, show_investment_page, show_reports_page
+from src.views import show_events_page, show_investment_page, show_main_page, show_reports_page
 
 
 def main():
-    """ Точка входа приложения """
+    """Точка входа приложения"""
     cache_currencies()  # узнаем курсы валют и акций
     cache_stocks()
 

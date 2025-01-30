@@ -1,13 +1,14 @@
-from typing import Any
 from datetime import datetime as datetime
+from typing import Any
+
 from src.datetime_utils import get_month_dates
 from src.utils import convert_values_in_listdict
 
 
 def investment_bank(month: str, transactions: list[dict[str, Any]], limit: int) -> float:
     def get_savings(operation: dict) -> float:
-        """ Сумма, откладываемая в копилку """
-        expense_amount = operation.get('Сумма операции')
+        """Сумма, откладываемая в копилку"""
+        expense_amount = operation.get("Сумма операции")
         expense_amount = abs(float(expense_amount))
         fract = 1 - (expense_amount - int(expense_amount))
         expense_amount = int(expense_amount)
@@ -27,7 +28,7 @@ def investment_bank(month: str, transactions: list[dict[str, Any]], limit: int) 
     :return: сумма, которую можно было бы накопить за указанный период при указанном округлении
     """
     date_start, date_end = get_month_dates(month)
-    convert_values_in_listdict(transactions, 'Дата операции', datetime, '%d.%m.%Y %H:%M:%S')
+    convert_values_in_listdict(transactions, "Дата операции", datetime, "%d.%m.%Y %H:%M:%S")
     # фильтруем расходы за период
     filtered_by_period = list(filter(lambda x: x.get("Дата операции") >= date_start, transactions))
     filtered_by_period = list(filter(lambda x: x.get("Дата операции") <= date_end, filtered_by_period))
