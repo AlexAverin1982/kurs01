@@ -1,22 +1,42 @@
 [
     {
         "symbol": "AAPL",
-        "price": 238.26
+        "price": 237.59
     },
     {
         "symbol": "AMZN",
-        "price": 238.15
+        "price": 234.64
     },
     {
         "symbol": "GOOGL",
-        "price": 195.3
+        "price": 200.87
     },
     {
         "symbol": "MSFT",
-        "price": 447.2
+        "price": 414.99
     },
     {
         "symbol": "TSLA",
-        "price": 398.09
+        "price": 400.28
+    },
+    {
+        "symbol": "NVDA",
+        "price": 124.65
+    },
+    {
+        "symbol": "META",
+        "price": 687.0
+    },
+    {
+        "symbol": "AVGO",
+        "price": 215.66
+    },
+    {
+        "symbol": "WMT",
+        "price": 98.65
+    },
+    {
+        "symbol": "V",
+        "price": 343.05
     }
 ]

@@ -35,8 +35,6 @@ def show_main_page() -> str:
     filename = os.path.join(par_dir, "data", "operations.xlsx")
     dataframe = get_dataframe_from_xlsx(filename)
 
-    # op_data = load_ops_from_xlsx(filename)
-
     # запрашиваем отчетный период
     report_date_start, report_date_end = get_period()
     # date_format = '%d.%m.%Y'
@@ -82,7 +80,7 @@ def show_main_page() -> str:
     result["currency_rates"] = get_currencies_rates(currencies_and_stocks)
     result["stock_prices"] = get_stocks_prices(currencies_and_stocks)
 
-    return dumps(result)
+    return dumps(result, ensure_ascii=False, indent=4)
 
 
 def show_events_page() -> str:
@@ -158,10 +156,11 @@ def show_events_page() -> str:
         "main": sorted(income_categories_data[1], key=itemgetter("amount"), reverse=True),
     }
 
+    # валюты и акции
     result["currency_rates"] = get_currencies_rates(currencies_and_stocks)
     result["stock_prices"] = get_stocks_prices(currencies_and_stocks)
 
-    return dumps(result)
+    return dumps(result, ensure_ascii=False, indent=4)
 
 
 def show_investment_page() -> float:

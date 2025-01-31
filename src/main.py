@@ -5,8 +5,10 @@ from src.views import show_events_page, show_investment_page, show_main_page, sh
 
 def main():
     """Точка входа приложения"""
-    cache_currencies()  # узнаем курсы валют и акций
-    cache_stocks()
+    """ кэшируем данные по валютам и акциям сразу в начале работы приложения
+    для ограничения количества обращений к апи впоследствии, обновляя кэш при необходимости"""
+    cache_currencies(file_cache_is_enough=True)  # узнаем курсы валют и акций
+    cache_stocks(file_cache_is_enough=True)
 
     while True:
         user_choice = show_main_page_menu()

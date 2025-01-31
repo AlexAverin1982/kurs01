@@ -31,8 +31,9 @@ def get_period(
     date_format: str = "YYYY-MM-DD HH:MM:SS", prompt: str = "Введите дату конца отчетного периода: "
 ) -> tuple[datetime, datetime]:
     """Запрашиваем у пользователя дату из отчетного периода
-    и возвращаем начало и конец периода"""
+    и возвращаем начало месяца и введенную дату того же месяца"""
 
+    # переводим отображаемую маску даты в приемлемую для функции
     format_string = date_format.replace("YYYY", "%Y").replace("MM", "%m", 1).replace("DD", "%d")
     format_string = format_string.replace("HH", "%H").replace("MM", "%M").replace("SS", "%S")
     print(f"Корректный формат ввода даты: {date_format}\n")
@@ -66,7 +67,7 @@ def get_span_dates(report_date: datetime, report_span: str) -> tuple[datetime, d
         date_end = date_end + tdelta(days=1) - tdelta(seconds=1)
     elif report_span == "Y":  # текущий год
         date_start = datetime(date_start.year, 1, 1)
-        date_end = date_start + tdelta(days=1 + int(is_leap_year(date_start.year))) - tdelta(seconds=1)
+        date_end = date_start + tdelta(days=365 + int(is_leap_year(date_start.year))) - tdelta(seconds=1)
     else:  # текущий месяц
         date_start = datetime(date_start.year, date_start.month, 1)
         date_end = datetime(date_start.year, date_start.month, 28)
@@ -79,7 +80,8 @@ def get_span_dates(report_date: datetime, report_span: str) -> tuple[datetime, d
 
 def get_month_dates(year_month_date_part: str) -> tuple[datetime, datetime]:
     """Функция возвращает первую и последнюю даты месяца, указанного во формате YYYY-MM"""
-    date_start = datetime.fromtimestamp(mktime(strptime(year_month_date_part + "-01", "%Y-%m-%d")))
+    s = year_month_date_part + "-01"
+    date_start = datetime.strptime(year_month_date_part + "-01", "%Y-%m-%d")
     date_end = date_start + tdelta(days=27)
     while date_start.month == date_end.month:
         date_end = date_end + tdelta(days=1)

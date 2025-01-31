@@ -15,7 +15,6 @@ def investment_bank(month: str, transactions: list[dict[str, Any]], limit: int) 
         return limit - (expense_amount % limit) + fract - 1
 
         """ Вычисление остатка для накопления из словаря с данными о расходе"""
-
     """ Инвесткопилка. Позволяет копить через округление ваших трат.
         Можно задать комфортный порог округления: 10, 50 или 100 ₽. Траты будут округляться,
         и разница между фактической суммой трат по карте и суммой округления будет попадать на счет «Инвесткопилки».
@@ -27,6 +26,7 @@ def investment_bank(month: str, transactions: list[dict[str, Any]], limit: int) 
     :param limit: — предел, до которого нужно округлять суммы операций (целое число).
     :return: сумма, которую можно было бы накопить за указанный период при указанном округлении
     """
+
     date_start, date_end = get_month_dates(month)
     convert_values_in_listdict(transactions, "Дата операции", datetime, "%d.%m.%Y %H:%M:%S")
     # фильтруем расходы за период
