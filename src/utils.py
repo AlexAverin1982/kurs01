@@ -1,7 +1,29 @@
+import logging
+import os
 from datetime import datetime as datetime
 from time import mktime, strptime
 
-from pandas import DataFrame, read_excel, to_datetime
+from pandas import DataFrame, Timestamp, read_excel, to_datetime
+
+# ------------------------------------- настраиваем журналирование ------------------------------------------------
+
+par_dir = os.path.abspath(os.path.join(__file__, os.pardir))
+par_dir = os.path.abspath(os.path.join(par_dir, os.pardir))
+utils_log_filename = os.path.join(par_dir, "logs", "utils.log")
+
+# Основная конфигурация logging
+logging.basicConfig(level=logging.INFO, filemode="w")
+utils_logger = logging.getLogger("utils_logger")
+utils_logger.setLevel(logging.INFO)
+utils_log_handler = logging.FileHandler(filename=utils_log_filename, encoding="utf-8")
+
+""" Формат записи логов включает метку времени, название модуля, уровень серьезности и сообщение """
+utils_log_formatter = logging.Formatter("%(asctime)s %(levelname)s in module %(filename)s: %(message)s")
+utils_log_handler.setFormatter(utils_log_formatter)
+utils_logger.addHandler(utils_log_handler)
+
+
+# ---------------------------------------------------------------------------------------------------------
 
 
 def greet_user(current_time: datetime = datetime.now()):
@@ -19,26 +41,14 @@ def greet_user(current_time: datetime = datetime.now()):
     return result
 
 
-# def load_ops_from_xlsx(filepath: str) -> list[dict]:
-#     """загружает данные по транзакциям из файлов excel"""
-#     result = []
-#     try:
-#         # column_types = {'id': int, 'state': str, 'date': datetime, 'amount': int,
-#         #                 'currency_name': str, 'currency_code':str, 'from': str, 'to': str, 'description': str}
-#         excel_data = read_excel(filepath, dtype=str)
-#         fields = list(excel_data.head(0).columns.values)
-#         for i in range(excel_data.shape[0]):
-#             row = list(excel_data.iloc[i])
-#             result.append(dict(zip(fields, row)))
-#     except:
-#         result = []
-#
-#     return result
-
-
 def get_dataframe_from_xlsx(filepath: str) -> DataFrame:
     """Загружает данные по транзакциям из файлов excel"""
-    return read_excel(filepath)
+    try:
+        df = read_excel(filepath)
+        utils_logger.info(f"Данные из файла загружены успешно. Обнаружено {df.shape[0]} записей")
+        return df
+    except FileNotFoundError:
+        utils_logger.error(f"Файл {filepath} не обнаружен")
 
 
 def filter_operations_by_period(
@@ -64,11 +74,18 @@ def filter_operations_by_period(
     df_period_filtered = dataframe[
         (dataframe[period_column] >= report_date_start) & (dataframe[period_column] <= report_date_end)
     ]
+    utils_logger.info(f"Записи отфильтрованы за период с {str(report_date_start)} по {str(report_date_end)}")
+    utils_logger.info(f"Обнаружено {df_period_filtered.shape[0]} записей")
 
     if filter_expenses:
         df_period_filtered = df_period_filtered[df_period_filtered[expenses_column] < 0]
+        utils_logger.info("Записи содержат только данные о расходах")
+        utils_logger.info(f"Обнаружено {df_period_filtered.shape[0]} записей")
     else:
         df_period_filtered = df_period_filtered[df_period_filtered[expenses_column] > 0]
+        utils_logger.info("Записи содержат только данные о поступлениях")
+        utils_logger.info(f"Обнаружено {df_period_filtered.shape[0]} записей")
+        utils_logger.info("-" * 30)
 
     return df_period_filtered.sort_values(by=period_column)
 
@@ -79,6 +96,8 @@ def get_cards_totals(
     """Сводные данные по картам: сумма трат и кэшбэка"""
     # группируем по номерам банковских карт
     df_grouped_by_cards = dataframe.groupby(by=card_no_column)
+    utils_logger.info(f"Обнаружены записи по {df_grouped_by_cards.ngroups} картам ")
+    utils_logger.info("-" * 30)
     agg_rule = {payment_column: "sum", cashback_column: "sum"}
     totals_by_cards = df_grouped_by_cards.agg(agg_rule)  # returns dataframe
 
@@ -107,7 +126,9 @@ def get_top_transactions(
     """Топ транзакций"""
     # сортируем исходные траты по убыванию
     transactions_top = dataframe[payment_column].nsmallest(transactions_count)
-
+    utils_logger.info(
+        f"Анализируем {dataframe.shape[0]} записей для поиска {transactions_count} самых крупных транзакций "
+    )
     top_transactions = []
     for row_index in transactions_top.index:
         row = dataframe.loc[row_index]
@@ -119,12 +140,13 @@ def get_top_transactions(
             "description": row[description_column],
         }
         top_transactions.append(transaction)
-
+    utils_logger.info(f"Сформировано {len(top_transactions)} записей")
+    utils_logger.info("-" * 30)
     return top_transactions
 
 
 def get_operations_totals(dataframe: DataFrame, payment_column: str) -> float:
-    """Сводные данные по картам: сумма трат и кэшбэка"""
+    """Сводные данные: сумма трат"""
     totals = dataframe.agg({payment_column: "sum"})  # returns dataframe
     return float(abs(totals.iloc[0]))
 
@@ -134,6 +156,9 @@ def get_top_operations(
 ) -> tuple[int, list[dict]]:
     """Топ расходов по категориям"""
     # группируем по категориям, суммируя расходы
+    utils_logger.info(
+        f"Анализируем {dataframe.shape[0]} записей для поиска {categories_count} самых затратных категорий "
+    )
 
     agg_expenses_grouped_by_category = dataframe.groupby(by=category_column).agg({payment_column: "sum"})
     # сортируем итоговые траты по убыванию
@@ -149,64 +174,9 @@ def get_top_operations(
         total_expenses += expense["amount"]
         top_expenses.append(expense)
 
+    utils_logger.info(f"Общий расход: {total_expenses} по {len(top_expenses)} категориям")
+    utils_logger.info("-" * 30)
     return total_expenses, top_expenses
-
-
-# def get_stats_from_list(data_list: list, report_date_start: str, report_date_end: str) -> dict:
-#     stats = {}
-#
-#     date_start = None
-#     date_end = None
-#
-#     report_date_start = strptime(report_date_start, '%d.%m.%Y')
-#     report_date_end = strptime(report_date_end, '%d.%m.%Y')
-#
-#     for item in data_list:
-#         payment_sum = float(item.get('Сумма платежа', 0))
-#         if payment_sum >= 0:
-#             continue
-#
-#         card_number = item.get('Номер карты', '')
-#         if not card_number or not isinstance(card_number, str):
-#             continue
-#
-#         payment_date = item.get('Дата платежа')
-#         if payment_date:
-#             payment_date = strptime(payment_date, '%d.%m.%Y')
-#
-#             if not (report_date_start <= payment_date <= report_date_end):
-#                 continue
-#
-#             if date_start:
-#                 if payment_date < date_start:
-#                     date_start = payment_date
-#             else:
-#                 date_start = payment_date
-#
-#             if date_end:
-#                 if payment_date > date_end:
-#                     date_end = payment_date
-#             else:
-#                 date_end = payment_date
-#
-#         totals = stats.get(card_number)
-#
-#         if totals:
-#             balance = totals.get('balance')
-#             if balance:
-#                 totals['balance'] = balance + payment_sum
-#         else:
-#             totals = {'balance': payment_sum}
-#
-#         cashback = float(item.get('Кэшбэк', 0))
-#         if isnan(cashback):
-#             cashback = 0.0
-#
-#         total_cashback = totals.get('cashback', 0)
-#         totals['cashback'] = total_cashback + cashback
-#         stats[card_number] = totals
-#
-#     return stats
 
 
 def convert_dataframe_to_listdict(df: DataFrame) -> list[dict]:
@@ -229,6 +199,13 @@ def convert_values_in_listdict(
         if not src_value:
             continue
         if convert_to_type is datetime:
-            d[key_name] = datetime.fromtimestamp(mktime(strptime(str(src_value), format_str)))
+            if isinstance(src_value, str):
+                d[key_name] = datetime.strptime(src_value, format_str)
+            elif isinstance(src_value, Timestamp):
+                try:
+                    d[key_name] = datetime.fromtimestamp(mktime(strptime(str(src_value), format_str)))
+                except ValueError:
+                    format_str = '%Y-%m-%d %H:%M:%S'
+                    d[key_name] = datetime.fromtimestamp(mktime(strptime(str(src_value), format_str)))
         else:
             d[key_name] = convert_to_type(src_value)

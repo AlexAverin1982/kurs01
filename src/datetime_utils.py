@@ -1,6 +1,5 @@
 from datetime import datetime as datetime
 from datetime import timedelta as tdelta
-from time import mktime, strptime
 
 
 def is_leap_year(year: int) -> bool:
@@ -80,7 +79,6 @@ def get_span_dates(report_date: datetime, report_span: str) -> tuple[datetime, d
 
 def get_month_dates(year_month_date_part: str) -> tuple[datetime, datetime]:
     """Функция возвращает первую и последнюю даты месяца, указанного во формате YYYY-MM"""
-    s = year_month_date_part + "-01"
     date_start = datetime.strptime(year_month_date_part + "-01", "%Y-%m-%d")
     date_end = date_start + tdelta(days=27)
     while date_start.month == date_end.month:

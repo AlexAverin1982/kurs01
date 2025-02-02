@@ -3,6 +3,8 @@ from json import dumps
 from operator import itemgetter
 from re import match
 
+from pandas import DataFrame
+
 from src.currencies_and_stocks_utils import (
     get_currencies_rates,
     get_stocks_prices,
@@ -22,17 +24,27 @@ from src.utils import (
     greet_user,
 )
 
+par_dir = os.path.abspath(os.path.join(__file__, os.pardir))
+par_dir = os.path.abspath(os.path.join(par_dir, os.pardir))
+
+
+def get_operations_filename() -> str:
+    """
+    Written specially for mocking purposes...
+    :return: filename to read dataframe from
+    """
+    global par_dir
+    return os.path.join(par_dir, "data", "operations.xlsx")
+
 
 def show_main_page() -> str:
     """JSON-данные по баноковским операциям на главной web-странице"""
-
+    global par_dir
     # приветствие
     result = {"greeting": greet_user()}
 
     # грузим данные из xlsx
-    par_dir = os.path.abspath(os.path.join(__file__, os.pardir))
-    par_dir = os.path.abspath(os.path.join(par_dir, os.pardir))
-    filename = os.path.join(par_dir, "data", "operations.xlsx")
+    filename = get_operations_filename()
     dataframe = get_dataframe_from_xlsx(filename)
 
     # запрашиваем отчетный период
@@ -86,13 +98,12 @@ def show_main_page() -> str:
 def show_events_page() -> str:
     """JSON-данные по баноковским операциям на web-странице События"""
     result = {}
-    par_dir = os.path.abspath(os.path.join(__file__, os.pardir))
-    par_dir = os.path.abspath(os.path.join(par_dir, os.pardir))
+    global par_dir
     user_filename = os.path.join(par_dir, "user_settings.json")
     currencies_and_stocks = load_currencies_and_stocks_from_json(user_filename)
 
     # грузим данные из xlsx
-    filename = os.path.join(par_dir, "data", "operations.xlsx")
+    filename = get_operations_filename()
     dataframe = get_dataframe_from_xlsx(filename)
 
     # запрашиваем дату периода
@@ -166,7 +177,7 @@ def show_events_page() -> str:
 def show_investment_page() -> float:
     """Страница Сервис - инвесткопилка"""
 
-    def date_is_invalid(date: str):
+    def date_is_invalid(date: str) -> bool:
         """Проверяем корректность ввода месяца"""
         return match(r"^(19|20)\d{2}-(0[1-9]|1[012])$", date, flags=0) is None
 
@@ -177,8 +188,7 @@ def show_investment_page() -> float:
         month = input("Введите месяц в формате YYYY-MM: ")
         invalid_input = date_is_invalid(month)
 
-    par_dir = os.path.abspath(os.path.join(__file__, os.pardir))
-    par_dir = os.path.abspath(os.path.join(par_dir, os.pardir))
+    global par_dir
 
     print("Инвесткопилка позволяет копить через округление ваших трат.")
     print("Можно задать комфортный порог округления: 10, 50 или 100 ₽.")
@@ -196,7 +206,7 @@ def show_investment_page() -> float:
 
     print("Считаем...")
     # грузим данные из xlsx
-    filename = os.path.join(par_dir, "data", "operations.xlsx")
+    filename = get_operations_filename()
     dataframe = get_dataframe_from_xlsx(filename)
     transactions = convert_dataframe_to_listdict(dataframe)
 
@@ -205,11 +215,10 @@ def show_investment_page() -> float:
     return savings
 
 
-def show_reports_page() -> None:
+def show_reports_page() -> DataFrame:
     """Страница отчетов: средние расходы по выходным и будням за 3 месяца"""
-    period_end = get_date()
-    par_dir = os.path.abspath(os.path.join(__file__, os.pardir))
-    par_dir = os.path.abspath(os.path.join(par_dir, os.pardir))
-    filename = os.path.join(par_dir, "data", "operations.xlsx")
+    period_end = get_date(format_string="%Y-%m-%d %H:%M:%S")
+    global par_dir
+    filename = get_operations_filename()
     dataframe = get_dataframe_from_xlsx(filename)
-    print(spending_by_workday(dataframe, str(period_end)))
+    return spending_by_workday(dataframe, str(period_end))

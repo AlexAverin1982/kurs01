@@ -26,14 +26,19 @@ stocks_cache = []
 currencies_cache = {}
 
 
+def load_existing_file(filename: str) -> str:
+    with open(filename, encoding="utf-8") as f:
+        return f.read()
+
+
 def load_currencies_and_stocks_from_json(filename: str) -> dict:
     """Функция принимает на вход путь до JSON-файла
     и возвращает список кодов валют и акций, интересующих пользователя"""
     result = []
     if os.path.exists(filename) and os.path.isfile(filename):
         try:
-            with open(filename, encoding="utf-8") as f:
-                result = json.load(f)
+            s = load_existing_file(filename)
+            result = json.loads(s)
             # utils_logger.info(f"файл {filename} с данными операций загружен успешно")
         except json.JSONDecodeError:
             result = []
@@ -47,6 +52,9 @@ def load_currencies_and_stocks_from_json(filename: str) -> dict:
 def get_currencies_rates(data: dict) -> list[dict]:
     """Получаем список словарей с ценами валют, полученными по API"""
     global currencies_cache
+
+    if not currencies_cache:
+        cache_currencies()
 
     result = []
     for currency_code in data.get("user_currencies", []):
@@ -70,25 +78,37 @@ def get_stocks_prices(data: dict) -> list[dict]:
 def select_users_currencies() -> dict:
     """Выбираем валюты, интересующие пользователя"""
     global user_currencies
+    global currencies_cache
+    if not currencies_cache:
+        cache_currencies()
+
+    currencies_available = {key: value["Name"] for key, value in currencies_cache.items()}
     print("Введите через запятую номера интересующих валют")
     print("Или *, чтобы выбрать все валюты")
     print("Любая другая строка - отмена выбора\n")
 
     i = 1
-    for code, description in CURRENCIES_AVAILABLE.items():
+    # for code, description in CURRENCIES_AVAILABLE.items():
+    for code, description in currencies_available.items():
         print(f"{i}. {code} --- {description}")
         i += 1
 
     user_input = input("Ваш выбор: ")
     if user_input == "*":
-        user_currencies = {code: get_currency_rate(code, "RUB") for code in CURRENCIES_AVAILABLE.keys()}
+        user_currencies = {code: get_currency_rate(code, "RUB") for code in currencies_available.keys()}
     elif user_input.find(",") > 0:
         indices = user_input.split(",")
         indices = [int(i) for i in indices]
         user_currencies = {
             code: get_currency_rate(code, "RUB")
-            for i, code in enumerate(CURRENCIES_AVAILABLE.keys())
+            for i, code in enumerate(currencies_available.keys())
             if i + 1 in indices
+        }
+    elif user_input.isdigit():
+        user_currencies = {
+            code: get_currency_rate(code, "RUB")
+            for i, code in enumerate(currencies_available.keys())
+            if int(user_input) == i + 1
         }
     else:
         print("Выбран основной набор валют: USD, EUR, CNY")
@@ -97,34 +117,50 @@ def select_users_currencies() -> dict:
     return user_currencies
 
 
-def show_users_rates(items: dict, header: str = "") -> None:
+def show_users_rates(items: list, header: str = "") -> None:
     """Выводим курсы валют"""
     print("\n")
+    global user_currencies
+    global currencies_cache
+    if not currencies_cache:
+        cache_currencies()
     if header:
         print(header)
-    for code, rate in items.items():
-        print(f"1 {code} == {round(rate, 2)} руб.")
+
+    for code in items:
+        data = currencies_cache.get(code)
+        if data:  # for code, data in items.items():
+            print(f"1 {code} == {round(data.get('Value', 0), 2)} руб.")
     print("\n")
 
 
 def select_users_stocks() -> dict:
     """Выбираем акции, интересующие пользователя"""
     global user_stocks
+    global stocks_cache
+    if not stocks_cache:
+        cache_stocks()
+        convert_stocks_prices()
+
+    global currencies_cache
+    if not currencies_cache:
+        cache_currencies()
+
     print("Введите через запятую коды интересующих акций")
     print("Любая другая строка - отмена выбора\n")
 
-    # i = 1
-    # for code, description in CURRENCIES_AVAILABLE.items():
-    #     print(f"{i}. {code} --- {description}")
-    #     i += 1
-
-    user_input = input("Ваш выбор: ")
+    user_input = input("Ваш выбор: ").upper()
     # if user_input == '*':
     #     user_stocks = {code: get_currency_rate(code, 'RUB') for code in CURRENCIES_AVAILABLE.keys()}
     if user_input.find(",") > 0:
         stocks = user_input.split(",")
-        user_stocks = {code: get_stock_price(code, "RUB") for code in stocks}
-    # else:
+        user_stocks = {code: get_stock_price(code) * get_currency_rate("USD", "RUB") for code in stocks}
+    elif stocks_cache.get(user_input):
+        price_usd = get_stock_price(user_input)
+        usd_rate = get_currency_rate("USD", "RUB")
+        user_stocks = {user_input: price_usd * usd_rate}
+    else:
+        return None
     #     print('Выбран основной набор валют: USD, EUR, CNY')
     #     user_currencies = {code: get_currency_rate(code, 'RUB') for code in ['USD', 'EUR', 'CNY']}
 
@@ -134,7 +170,7 @@ def select_users_stocks() -> dict:
 def save_currencies_and_stocks_to_json(filename: str) -> None:
     """Сохраняем акции и валюты, интересующие пользователя в файл предпочтений пользователя"""
     global user_stocks, user_currencies
-    data_to_write = {"user_currencies": user_currencies.keys(), "user_stocks": user_stocks.keys()}
+    data_to_write = {"user_currencies": list(user_currencies.keys()), "user_stocks": list(user_stocks.keys())}
     with open(filename, "w") as f:
         json.dump(data_to_write, f)
 
@@ -151,30 +187,37 @@ def cache_stocks(file_cache_is_enough: bool = True) -> dict:
     read_from_file = []
     symbols_to_read = []
     if os.path.exists(cache_filename):
-        with open(cache_filename, encoding="utf-8") as f:
-            read_from_file = json.load(f)
+        json_data = load_existing_file(cache_filename)
+        # with open(cache_filename, encoding="utf-8") as f:
+        read_from_file = json.loads(json_data)
         symbols_read = set([stock_dict.get("symbol", "") for stock_dict in read_from_file])
         symbols_to_read = set(currencies_and_stocks["user_stocks"])
-        symbols_to_read = symbols_to_read.difference(symbols_read)
+        symbols_need_to_read = symbols_to_read.difference(symbols_read)
 
-    if len(symbols_to_read) or (not file_cache_is_enough) or (not read_from_file):
-        if symbols_to_read:
-            stocks_cache = get_overall_stocks(list(symbols_to_read))
+    if len(symbols_need_to_read) or (not file_cache_is_enough) or (not read_from_file):
+        if symbols_need_to_read:
+            stocks_cache = get_overall_stocks(list(symbols_need_to_read))
         else:
             stocks_cache = get_overall_stocks(currencies_and_stocks["user_stocks"])
         data_to_write = []
         if stocks_cache:
-            for stock in stocks_cache["data"]:
-                stock_dict = {"symbol": stock["symbol"], "price": stock["close"]}
-                data_to_write.append(stock_dict)
-            read_from_file.extend(data_to_write)
+            if isinstance(stocks_cache, dict):
+                for stock in stocks_cache["data"]:
+                    stock_dict = {"symbol": stock["symbol"], "price": stock["close"]}
+                    data_to_write.append(stock_dict)
+                read_from_file.extend(data_to_write)
+            elif isinstance(stocks_cache, list):
+                for stock_data in stocks_cache:
+                    stock_dict = {"symbol": stock_data["symbol"], "price": stock_data["close"]}
+                    data_to_write.append(stock_dict)
+                read_from_file.extend(data_to_write)
 
         if read_from_file:
             with open(cache_filename, "w") as f:
                 json.dump(read_from_file, f, indent=4)
 
     stocks_cache = read_from_file
-    convert_stocks_prices()
+    # convert_stocks_prices()
     stocks_cache = convert_to_dict(stocks_cache, "symbol", "price")
     return stocks_cache
 
@@ -191,13 +234,14 @@ def cache_currencies(file_cache_is_enough: bool = True) -> list[dict]:
     read_from_file = {}
     codes_to_read = []
     if os.path.exists(cache_filename):
-        with open(cache_filename, encoding="utf-8") as f:
-            read_from_file = json.load(f)
+        json_str = load_existing_file(cache_filename)
+        # with open(cache_filename, encoding="utf-8") as f:
+        read_from_file = json.loads(json_str)
         codes_read = set(read_from_file.keys())
         codes_to_read = set(currencies_and_stocks["user_currencies"])
-        codes_to_read = codes_to_read.difference(codes_read)
+        codes_need_to_read = codes_to_read.difference(codes_read)
 
-    if len(codes_to_read) or (not file_cache_is_enough) or (not read_from_file):
+    if len(codes_need_to_read) or (not file_cache_is_enough) or (not read_from_file):
         currencies_cache = get_overall_currencies()
         # if codes_to_read:
         #     currencies_cache = get_overall_currencies()
@@ -218,6 +262,15 @@ def cache_currencies(file_cache_is_enough: bool = True) -> list[dict]:
 
 
 def convert_stocks_prices(from_currency: str = "USD", to_currency: str = "RUB") -> None:
+    """
+    Конвертируем цены на акции (по умолчанию в долларах)
+    :param from_currency:  из
+    :param to_currency: в
+    :return: сколько
+    """
+    global currencies_cache
+    if not currencies_cache:
+        cache_currencies()
     ratio = currencies_cache.get(from_currency)
     if ratio:
         ratio = ratio.get("Value")
@@ -234,11 +287,25 @@ def convert_stocks_prices(from_currency: str = "USD", to_currency: str = "RUB") 
         ratio /= ratio2
 
     global stocks_cache
-    for stock in stocks_cache:
-        stock["price"] = round(ratio * stock["price"], 2)
+    if not stocks_cache:
+        cache_stocks()
+
+    if isinstance(stocks_cache, list):
+        for stock in stocks_cache:
+            stock["price"] = round(ratio * stock["price"], 2)
+    elif isinstance(stocks_cache, dict):
+        for key in stocks_cache.keys():
+            stocks_cache[key] = round(ratio * stocks_cache[key], 2)
 
 
 def convert_to_dict(alist: list, key_name: str, value_name: str) -> dict:
+    """
+    Преобразуем список словарей в словарь
+    :param alist: список словарей
+    :param key_name: имя ключа
+    :param value_name: имя значения
+    :return: словарь
+    """
     result = {}
     for item in alist:
         result[item[key_name]] = item[value_name]
