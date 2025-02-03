@@ -1,0 +1,22 @@
+[
+    {
+        "symbol": "AAPL",
+        "price": 238.26
+    },
+    {
+        "symbol": "AMZN",
+        "price": 238.15
+    },
+    {
+        "symbol": "GOOGL",
+        "price": 195.3
+    },
+    {
+        "symbol": "MSFT",
+        "price": 447.2
+    },
+    {
+        "symbol": "TSLA",
+        "price": 398.09
+    }
+]

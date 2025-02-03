@@ -1,0 +1,168 @@
+spending_by_workday() call start at Sun Feb  2 13:28:29 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 13:28:35 2025
+Run time: 6.167560577392578
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 13:29:21 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 13:29:21 2025
+Run time: 0.025002479553222656
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 13:30:26 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 13:30:26 2025
+Run time: 0.024033308029174805
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 13:30:55 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 13:30:55 2025
+Run time: 0.006999492645263672
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 20:03:20 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 20:03:20 2025
+Run time: 0.2185359001159668
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 20:03:32 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 20:03:32 2025
+Run time: 0.006999492645263672
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 20:15:46 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 20:15:46 2025
+Run time: 0.1699674129486084
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 20:15:57 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 20:15:57 2025
+Run time: 0.006987571716308594
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 20:19:43 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 20:19:43 2025
+Run time: 0.11699938774108887
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 20:20:06 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 20:20:07 2025
+Run time: 0.010998964309692383
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 21:00:26 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 21:00:27 2025
+Run time: 0.3316197395324707
+Result is           Сумма платежа
+Дни                    
+Будни        696.794276
+Выходные     657.544414
+spending_by_workday() call start at Sun Feb  2 21:01:28 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 21:01:28 2025
+Run time: 0.02501988410949707
+Result is           Сумма платежа
+Дни                    
+Будни        696.794276
+Выходные     657.544414
+spending_by_workday() call start at Sun Feb  2 21:53:13 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 21:53:14 2025
+Run time: 0.3439981937408447
+Result is           Сумма платежа
+Дни                    
+Будни        806.722778
+Выходные    2045.864875
+spending_by_workday() call start at Sun Feb  2 21:59:29 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 21:59:30 2025
+Run time: 0.3140585422515869
+Result is           Сумма платежа
+Дни                    
+Будни        800.493765
+Выходные     763.720396
+spending_by_workday() call start at Sun Feb  2 22:00:38 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 22:00:38 2025
+Run time: 0.028981685638427734
+Result is           Сумма платежа
+Дни                    
+Будни       1881.922141
+Выходные    1698.247476
+spending_by_workday() call start at Sun Feb  2 22:34:08 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 22:34:08 2025
+Run time: 0.17799091339111328
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 22:34:19 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 22:34:19 2025
+Run time: 0.007995367050170898
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 22:40:06 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 22:40:07 2025
+Run time: 0.02700042724609375
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 22:40:18 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 22:40:18 2025
+Run time: 0.007999897003173828
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 22:40:35 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 22:40:35 2025
+Run time: 0.015997648239135742
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0
+spending_by_workday() call start at Sun Feb  2 22:40:59 2025
+spending_by_workday() ok
+spending_by_workday() finished at Sun Feb  2 22:40:59 2025
+Run time: 0.014001846313476562
+Result is           Сумма платежа
+Дни                    
+Будни            1000.0
+Выходные          500.0

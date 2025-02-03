@@ -6,8 +6,45 @@ authors = ["Alexander Averin <alexaverin201156@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
+pandas = "^2.2.3"
+openpyxl = "^3.1.5"
+requests = "^2.32.3"
+python-dotenv = "1.0.1"
+responses = "^0.25.6"
 
+
+[tool.poetry.group.lint.dependencies]
+flake8 = "^7.1.1"
+black = "^24.10.0"
+mypy = "^1.14.1"
+isort = "^5.13.2"
+
+[tool.isort]
+# line-length = 119 мой айсорт ругается, что не знает такой настройки
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+pytest-cov = "^6.0.0"
+pytest-mock = "^3.14.0"
+responses = "^0.25.6"
+
+[tool.black]
+line-length = 119
+exclude = '''
+(
+  /(
+      \.git
+    | \.venv
+  )/
+)
+'''
+
+[tool.mypy]
+disallow_untyped_defs = true
+warn_return_any = true
+exclude = 'venv'
 
 [build-system]
 requires = ["poetry-core"]
